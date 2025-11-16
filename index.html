@@ -35,7 +35,7 @@
             creative: 'creative achievement',
             sustain: 'financial boost',
             control: 'accountability win',
-            flow: 'state management'
+            flow: ''
           };
 
           const getColor = (value) => {
@@ -52,12 +52,14 @@
 
           const handleMouseMove = (e) => {
             if (dragging) {
-              const meters = document.querySelectorAll('[data-meter]');
-              meters.forEach(meter => {
-                if (meter.dataset.meter === dragging) {
-                  updateLevel(dragging, e, meter);
-                }
-              });
+              const bar = document.querySelector(`[data-bar="${dragging}"]`);
+              if (bar) {
+                const rect = bar.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                const height = rect.height;
+                const value = Math.max(0, Math.min(1, 1 - (y / height)));
+                setLevels(prev => ({ ...prev, [dragging]: value }));
+              }
             }
           };
 
@@ -65,9 +67,8 @@
             setDragging(null);
           };
 
-          const updateLevel = (key, e, element) => {
-            const target = element || e.currentTarget;
-            const rect = target.getBoundingClientRect();
+          const updateLevel = (key, e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
             const y = e.clientY - rect.top;
             const height = rect.height;
             const value = Math.max(0, Math.min(1, 1 - (y / height)));
@@ -134,22 +135,21 @@
             <div className="min-h-screen bg-gradient-to-br from-teal-900 via-cyan-900 to-teal-800 flex items-center justify-center p-8 relative overflow-hidden">
               <CircuitBackground />
               
-              <div className="bg-slate-950/80 rounded-lg shadow-2xl p-12 relative z-10" style={{ 
+              <div className="bg-slate-950/80 rounded-lg shadow-2xl p-12 pr-40 relative z-10" style={{ 
                 border: '4px solid #1e293b',
-                boxShadow: '0 0 0 2px #0ea5e9, 0 8px 32px rgba(0,0,0,0.6)'
+                boxShadow: '0 0 0 2px #0ea5e9, 0 8px 32px rgba(0,0,0,0.6)',
+                position: 'relative'
               }}>
-                <div className="mb-8 text-center">
-                  <h1 className="text-3xl font-bold text-cyan-400 tracking-wider mb-2" style={{
-                    textShadow: '2px 2px 0 #0c4a6e, -1px -1px 0 #0c4a6e, 1px -1px 0 #0c4a6e, -1px 1px 0 #0c4a6e',
+                <div className="absolute top-6 left-6">
+                  <h1 className="text-xs text-cyan-400/60 tracking-wider" style={{
                     fontFamily: 'monospace',
-                    letterSpacing: '0.15em'
+                    letterSpacing: '0.1em'
                   }}>
                     ENERGY MONITOR
                   </h1>
-                  <div className="h-1 w-32 bg-cyan-500 mx-auto" style={{ boxShadow: '0 0 8px #06b6d4' }}></div>
                 </div>
 
-                <div className="flex gap-12 mb-8">
+                <div className="flex gap-12 mb-8 items-end" style={{ marginTop: '32px' }}>
                   {Object.keys(levels).map((key) => (
                     <div key={key} className="flex flex-col items-center">
                       <div className="text-cyan-300 font-bold text-sm mb-1 tracking-widest" style={{
@@ -158,28 +158,34 @@
                       }}>
                         {labels[key]}
                       </div>
-                      <div className="text-slate-400 text-xs mb-3 h-8 text-center" style={{ 
+                      <div className="text-slate-400 text-xs text-center" style={{ 
                         width: '100px',
+                        height: key === 'flow' ? '16px' : '32px',
+                        marginBottom: key === 'flow' ? '8px' : '12px',
                         fontFamily: 'monospace'
                       }}>
                         {subtitles[key]}
                       </div>
                       
                       <div 
-                        data-meter={key}
-                        className="relative w-16 h-96 rounded-full cursor-pointer"
+                        className="relative rounded-full cursor-pointer"
+                        data-bar={key}
                         onMouseDown={handleMouseDown(key)}
                         style={{ 
+                          width: '48px',
+                          height: '448px',
                           userSelect: 'none',
-                          background: '#0f172a',
+                          background: key === 'flow' ? '#0f172a' : '#1a2e42',
                           border: '3px solid #1e293b',
-                          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.8), 0 0 0 1px #0ea5e9'
+                          boxShadow: key === 'flow' 
+                            ? 'inset 0 2px 8px rgba(0,0,0,0.8), 0 0 0 1px #0ea5e9, 0 0 0 4px rgba(251, 146, 60, 0.6)' 
+                            : 'inset 0 2px 8px rgba(0,0,0,0.8), 0 0 0 1px #0ea5e9'
                         }}
                       >
                         {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((pos) => (
                           <div 
                             key={pos}
-                            className="absolute w-full pointer-events-none"
+                            className="absolute w-full"
                             style={{ 
                               top: `${(1 - pos) * 100}%`,
                               height: '2px',
@@ -192,7 +198,7 @@
                         {key === 'flow' && (
                           <>
                             <div 
-                              className="absolute left-full ml-2 text-xs font-bold pointer-events-none"
+                              className="absolute left-full ml-3 text-xs font-bold"
                               style={{ 
                                 top: '85%', 
                                 transform: 'translateY(-50%)', 
@@ -205,7 +211,7 @@
                               PARALYSIS
                             </div>
                             <div 
-                              className="absolute left-full ml-2 text-xs font-bold pointer-events-none"
+                              className="absolute left-full ml-3 text-xs font-bold"
                               style={{ 
                                 top: '65%', 
                                 transform: 'translateY(-50%)', 
@@ -221,17 +227,18 @@
                         )}
 
                         <div 
-                          className="absolute bottom-0 w-full rounded-full transition-all duration-150 pointer-events-none"
+                          className="absolute bottom-0 w-full rounded-full"
                           style={{ 
                             height: `${levels[key] * 100}%`,
                             backgroundColor: getColor(levels[key]),
                             boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 16px ${getColor(levels[key])}80`,
-                            borderTop: levels[key] > 0 ? `2px solid rgba(255,255,255,0.3)` : 'none'
+                            borderTop: levels[key] > 0 ? `2px solid rgba(255,255,255,0.3)` : 'none',
+                            transition: dragging === key ? 'none' : 'height 0.05s ease-out'
                           }}
                         />
 
                         <div 
-                          className="absolute w-full cursor-grab active:cursor-grabbing pointer-events-none"
+                          className="absolute w-full cursor-grab active:cursor-grabbing"
                           style={{ 
                             bottom: `${levels[key] * 100}%`,
                             transform: 'translateY(50%)',
@@ -262,7 +269,7 @@
                   ))}
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-start">
                   <button
                     onClick={exportData}
                     className="text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
