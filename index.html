@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Tracker</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const EnergyTracker = () => {
+          const [levels, setLevels] = useState({
+            creative: 0.5,
+            sustain: 0.5,
+            control: 0.5,
+            flow: 0.5
+          });
+
+          const [dragging, setDragging] = useState(null);
+
+          const labels = {
+            creative: 'CREATIVE',
+            sustain: 'SUSTAIN',
+            control: 'CONTROL',
+            flow: 'FLOW'
+          };
+
+          const subtitles = {
+            creative: 'creative achievement',
+            sustain: 'financial boost',
+            control: 'accountability win',
+            flow: 'state management'
+          };
+
+          const getColor = (value) => {
+            if (value < 0.25) return '#FF3B3B';
+            if (value < 0.5) return '#FFB800';
+            if (value < 0.75) return '#00E676';
+            return '#00B8FF';
+          };
+
+          const handleMouseDown = (key) => (e) => {
+            setDragging(key);
+            updateLevel(key, e);
+          };
+
+          const handleMouseMove = (e) => {
+            if (dragging) {
+              const meters = document.querySelectorAll('[data-meter]');
+              meters.forEach(meter => {
+                if (meter.dataset.meter === dragging) {
+                  updateLevel(dragging, e, meter);
+                }
+              });
+            }
+          };
+
+          const handleMouseUp = () => {
+            setDragging(null);
+          };
+
+          const updateLevel = (key, e, element) => {
+            const target = element || e.currentTarget;
+            const rect = target.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const height = rect.height;
+            const value = Math.max(0, Math.min(1, 1 - (y / height)));
+            setLevels(prev => ({ ...prev, [key]: value }));
+          };
+
+          const exportData = () => {
+            const date = new Date().toISOString().split('T')[0];
+            let report = `=====================================\n`;
+            report += `ENERGY LEVELS REPORT\n`;
+            report += `${date}\n`;
+            report += `=====================================\n\n`;
+            
+            Object.entries(levels).forEach(([key, value]) => {
+              report += `* ${labels[key]}: ${value.toFixed(2)}\n`;
+            });
+            
+            report += `\n=====================================\n`;
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `energy-levels-${date}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          useEffect(() => {
+            if (dragging) {
+              window.addEventListener('mousemove', handleMouseMove);
+              window.addEventListener('mouseup', handleMouseUp);
+              return () => {
+                window.removeEventListener('mousemove', handleMouseMove);
+                window.removeEventListener('mouseup', handleMouseUp);
+              };
+            }
+          }, [dragging]);
+
+          const CircuitBackground = () => (
+            <svg className="absolute inset-0 w-full h-full opacity-30" style={{ zIndex: 0 }}>
+              <defs>
+                <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="20" x2="100" y2="20" stroke="#0ea5e9" strokeWidth="1" />
+                  <line x1="0" y1="50" x2="100" y2="50" stroke="#0ea5e9" strokeWidth="1" />
+                  <line x1="0" y1="80" x2="100" y2="80" stroke="#0ea5e9" strokeWidth="1" />
+                  <line x1="25" y1="0" x2="25" y2="100" stroke="#0ea5e9" strokeWidth="1" />
+                  <line x1="60" y1="0" x2="60" y2="100" stroke="#0ea5e9" strokeWidth="1" />
+                  <line x1="85" y1="0" x2="85" y2="100" stroke="#0ea5e9" strokeWidth="1" />
+                  <circle cx="25" cy="20" r="3" fill="#0ea5e9" />
+                  <circle cx="60" cy="50" r="3" fill="#0ea5e9" />
+                  <circle cx="85" cy="80" r="3" fill="#0ea5e9" />
+                  <circle cx="25" cy="80" r="2" fill="#0ea5e9" />
+                  <circle cx="85" cy="20" r="2" fill="#0ea5e9" />
+                  <line x1="25" y1="20" x2="60" y2="50" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="2,2" />
+                  <line x1="60" y1="50" x2="85" y2="80" stroke="#0ea5e9" strokeWidth="0.5" strokeDasharray="2,2" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#circuit)" />
+            </svg>
+          );
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-teal-900 via-cyan-900 to-teal-800 flex items-center justify-center p-8 relative overflow-hidden">
+              <CircuitBackground />
+              
+              <div className="bg-slate-950/80 rounded-lg shadow-2xl p-12 relative z-10" style={{ 
+                border: '4px solid #1e293b',
+                boxShadow: '0 0 0 2px #0ea5e9, 0 8px 32px rgba(0,0,0,0.6)'
+              }}>
+                <div className="mb-8 text-center">
+                  <h1 className="text-3xl font-bold text-cyan-400 tracking-wider mb-2" style={{
+                    textShadow: '2px 2px 0 #0c4a6e, -1px -1px 0 #0c4a6e, 1px -1px 0 #0c4a6e, -1px 1px 0 #0c4a6e',
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.15em'
+                  }}>
+                    ENERGY MONITOR
+                  </h1>
+                  <div className="h-1 w-32 bg-cyan-500 mx-auto" style={{ boxShadow: '0 0 8px #06b6d4' }}></div>
+                </div>
+
+                <div className="flex gap-12 mb-8">
+                  {Object.keys(levels).map((key) => (
+                    <div key={key} className="flex flex-col items-center">
+                      <div className="text-cyan-300 font-bold text-sm mb-1 tracking-widest" style={{
+                        fontFamily: 'monospace',
+                        textShadow: '1px 1px 0 #0c4a6e'
+                      }}>
+                        {labels[key]}
+                      </div>
+                      <div className="text-slate-400 text-xs mb-3 h-8 text-center" style={{ 
+                        width: '100px',
+                        fontFamily: 'monospace'
+                      }}>
+                        {subtitles[key]}
+                      </div>
+                      
+                      <div 
+                        data-meter={key}
+                        className="relative w-16 h-96 rounded-full cursor-pointer"
+                        onMouseDown={handleMouseDown(key)}
+                        style={{ 
+                          userSelect: 'none',
+                          background: '#0f172a',
+                          border: '3px solid #1e293b',
+                          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.8), 0 0 0 1px #0ea5e9'
+                        }}
+                      >
+                        {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((pos) => (
+                          <div 
+                            key={pos}
+                            className="absolute w-full pointer-events-none"
+                            style={{ 
+                              top: `${(1 - pos) * 100}%`,
+                              height: '2px',
+                              background: '#1e293b',
+                              boxShadow: '0 0 2px #0ea5e9'
+                            }}
+                          />
+                        ))}
+
+                        {key === 'flow' && (
+                          <>
+                            <div 
+                              className="absolute left-full ml-2 text-xs font-bold pointer-events-none"
+                              style={{ 
+                                top: '85%', 
+                                transform: 'translateY(-50%)', 
+                                whiteSpace: 'nowrap',
+                                color: '#ef4444',
+                                fontFamily: 'monospace',
+                                textShadow: '1px 1px 0 #000'
+                              }}
+                            >
+                              PARALYSIS
+                            </div>
+                            <div 
+                              className="absolute left-full ml-2 text-xs font-bold pointer-events-none"
+                              style={{ 
+                                top: '65%', 
+                                transform: 'translateY(-50%)', 
+                                whiteSpace: 'nowrap',
+                                color: '#fb923c',
+                                fontFamily: 'monospace',
+                                textShadow: '1px 1px 0 #000'
+                              }}
+                            >
+                              OVERWHELM
+                            </div>
+                          </>
+                        )}
+
+                        <div 
+                          className="absolute bottom-0 w-full rounded-full transition-all duration-150 pointer-events-none"
+                          style={{ 
+                            height: `${levels[key] * 100}%`,
+                            backgroundColor: getColor(levels[key]),
+                            boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.3), 0 0 16px ${getColor(levels[key])}80`,
+                            borderTop: levels[key] > 0 ? `2px solid rgba(255,255,255,0.3)` : 'none'
+                          }}
+                        />
+
+                        <div 
+                          className="absolute w-full cursor-grab active:cursor-grabbing pointer-events-none"
+                          style={{ 
+                            bottom: `${levels[key] * 100}%`,
+                            transform: 'translateY(50%)',
+                            height: '3px',
+                            background: '#fff',
+                            boxShadow: '0 0 8px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                          }}
+                        >
+                          <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2" style={{
+                            width: '12px',
+                            height: '12px',
+                            background: '#fff',
+                            border: '2px solid #0c4a6e',
+                            boxShadow: '0 0 4px rgba(255,255,255,0.8)'
+                          }}></div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 text-center">
+                        <div className="text-xl font-mono font-bold" style={{ 
+                          color: getColor(levels[key]),
+                          textShadow: `1px 1px 0 #000, 0 0 8px ${getColor(levels[key])}`
+                        }}>
+                          {Math.round(levels[key] * 100)}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={exportData}
+                    className="text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
+                    style={{
+                      fontFamily: 'monospace',
+                      textShadow: '1px 1px 0 #0c4a6e',
+                      letterSpacing: '0.1em'
+                    }}
+                  >
+                    [export log]
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<EnergyTracker />, document.getElementById('root'));
+    </script>
+</body>
+</html>
